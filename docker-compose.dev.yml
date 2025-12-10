@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    logging:
+      driver: none
+    volumes:
+      - templra-postgres-dev:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: templra_db
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: always
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=templra_db
+      - DB_SCHEMA=public
+      - TZ=UTC
+      - JWT_SECRET=dev-secret-key
+      - JWT_EXPIRES_IN=24h
+      - PASSWORD_HASH_SALT=10
+      - SENDGRID_API_KEY=dev-key
+      - SENDGRID_FROM=noreply@example.com
+      - MAILER_URL=http://localhost:3000
+      - MAILER_API_KEY=dev-key
+      - CAPTCHA_KEY=dev-captcha-key
+      - DOC_ENABLED=true
+      - DEVELOPMENT=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+volumes:
+  templra-postgres-dev:
+
